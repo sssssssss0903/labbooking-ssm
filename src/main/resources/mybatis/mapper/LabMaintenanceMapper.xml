@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labbooking.ssm.mapper.LabMaintenanceMapper">
+    <resultMap id="BaseResultMap" type="com.labbooking.ssm.domain.LabMaintenance">
+        <id column="id" property="id"/>
+        <result column="equipment_id" property="equipmentId"/>
+        <result column="report_user_id" property="reportUserId"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="complete_time" property="completeTime"/>
+        <result column="handler_id" property="handlerId"/>
+        <result column="result" property="result"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="equipment_name" property="equipmentName"/>
+        <result column="equipment_code" property="equipmentCode"/>
+        <result column="report_user_name" property="reportUserName"/>
+        <result column="handler_name" property="handlerName"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.labbooking.ssm.domain.LabMaintenance" useGeneratedKeys="true" keyProperty="id">
+        insert into lab_maintenance (equipment_id, report_user_id, description, status, create_time, update_time)
+        values (#{equipmentId}, #{reportUserId}, #{description}, #{status}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="updateStatus">
+        update lab_maintenance
+        set status = #{status},
+            complete_time = #{completeTime},
+            handler_id = #{handlerId},
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <select id="listByEquipment" parameterType="long" resultMap="BaseResultMap">
+        select m.*,
+               eq.equipment_name as equipment_name,
+               eq.equipment_code as equipment_code,
+               ru.real_name as report_user_name,
+               h.real_name as handler_name
+        from lab_maintenance m
+                 left join lab_equipment eq on m.equipment_id = eq.id
+                 left join sys_user ru on m.report_user_id = ru.id
+                 left join sys_user h on m.handler_id = h.id
+        where m.equipment_id = #{equipmentId}
+        order by m.id desc
+    </select>
+
+    <select id="listByReportUser" resultMap="BaseResultMap">
+        select m.*,
+               eq.equipment_name as equipment_name,
+               eq.equipment_code as equipment_code,
+               ru.real_name as report_user_name,
+               h.real_name as handler_name
+        from lab_maintenance m
+                 left join lab_equipment eq on m.equipment_id = eq.id
+                 left join sys_user ru on m.report_user_id = ru.id
+                 left join sys_user h on m.handler_id = h.id
+        where m.report_user_id = #{userId}
+        order by m.id desc
+    </select>
+
+    <select id="listAll" resultMap="BaseResultMap">
+        select m.*,
+               eq.equipment_name as equipment_name,
+               eq.equipment_code as equipment_code,
+               ru.real_name as report_user_name,
+               h.real_name as handler_name
+        from lab_maintenance m
+                 left join lab_equipment eq on m.equipment_id = eq.id
+                 left join sys_user ru on m.report_user_id = ru.id
+                 left join sys_user h on m.handler_id = h.id
+        order by m.id desc
+    </select>
+</mapper>
+
+
+

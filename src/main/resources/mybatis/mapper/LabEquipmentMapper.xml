@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labbooking.ssm.mapper.LabEquipmentMapper">
+    <resultMap id="BaseResultMap" type="com.labbooking.ssm.domain.LabEquipment">
+        <id column="id" property="id"/>
+        <result column="equipment_name" property="equipmentName"/>
+        <result column="equipment_code" property="equipmentCode"/>
+        <result column="model" property="model"/>
+        <result column="lab_id" property="labId"/>
+        <result column="type" property="type"/>
+        <result column="status" property="status"/>
+        <result column="image_path" property="imagePath"/>
+        <result column="usage_notice" property="usageNotice"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <!-- 关联实验室信息 -->
+        <result column="lab_name" property="labName"/>
+        <result column="lab_location" property="labLocation"/>
+    </resultMap>
+
+    <select id="selectById" parameterType="long" resultMap="BaseResultMap">
+        select * from lab_equipment where id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.labbooking.ssm.domain.LabEquipment" useGeneratedKeys="true" keyProperty="id">
+        insert into lab_equipment
+        (equipment_name, equipment_code, model, lab_id, type, status, image_path, usage_notice, create_time, update_time)
+        values
+        (#{equipmentName}, #{equipmentCode}, #{model}, #{labId}, #{type}, #{status}, #{imagePath}, #{usageNotice}, now(), now())
+    </insert>
+
+    <update id="update" parameterType="com.labbooking.ssm.domain.LabEquipment">
+        update lab_equipment
+        <set>
+            <if test="equipmentName != null">equipment_name = #{equipmentName},</if>
+            <if test="equipmentCode != null">equipment_code = #{equipmentCode},</if>
+            <if test="model != null">model = #{model},</if>
+            <if test="labId != null">lab_id = #{labId},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="imagePath != null">image_path = #{imagePath},</if>
+            <if test="usageNotice != null">usage_notice = #{usageNotice},</if>
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="queryList" resultMap="BaseResultMap">
+        select e.*,
+               l.lab_name as lab_name,
+               l.location as lab_location
+        from lab_equipment e
+        left join lab_info l on e.lab_id = l.id
+        <where>
+            <if test="q != null and q != ''">
+                and (e.equipment_name like concat('%', #{q}, '%')
+                 or e.equipment_code like concat('%', #{q}, '%')
+                 or e.model like concat('%', #{q}, '%'))
+            </if>
+            <if test="type != null and type != ''">
+                and e.type = #{type}
+            </if>
+            <if test="labId != null">
+                and e.lab_id = #{labId}
+            </if>
+            <if test="status != null and status != ''">
+                and e.status = #{status}
+            </if>
+        </where>
+        order by e.update_time desc
+    </select>
+    
+    <select id="adminQueryList" resultMap="BaseResultMap">
+        select e.*
+        from lab_equipment e
+                 inner join lab_info li on e.lab_id = li.id
+        <where>
+            <if test="q != null and q != ''">
+                and (e.equipment_name like concat('%', #{q}, '%')
+                 or e.equipment_code like concat('%', #{q}, '%')
+                 or e.model like concat('%', #{q}, '%'))
+            </if>
+            <if test="type != null and type != ''">
+                and e.type = #{type}
+            </if>
+            <if test="labId != null">
+                and e.lab_id = #{labId}
+            </if>
+            <if test="status != null and status != ''">
+                and e.status = #{status}
+            </if>
+            and li.manager_id = #{managerId}
+        </where>
+        order by e.update_time desc
+    </select>
+
+    <delete id="delete" parameterType="long">
+        delete from lab_equipment where id = #{id}
+    </delete>
+</mapper>
+
+

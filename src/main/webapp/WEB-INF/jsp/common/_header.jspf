@@ -1,0 +1,70 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page import="com.labbooking.ssm.domain.SysUser" %>
+<%@ page import="java.util.List" %>
+<%
+    SysUser user = (SysUser) session.getAttribute("LOGIN_USER");
+    List<String> roles = (List<String>) session.getAttribute("LOGIN_ROLES");
+    boolean isLabAdmin = roles != null && roles.contains("ROLE_LAB_ADMIN");
+    boolean isSysAdmin = roles != null && roles.contains("ROLE_SYS_ADMIN");
+    boolean isAdmin = isLabAdmin || isSysAdmin;
+%>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>${pageTitle != null ? pageTitle : '实验室预约系统'} - LabBooking</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/app.css">
+</head>
+<body>
+<!-- 导航栏 -->
+<div class="app-header">
+    <div class="header-content">
+        <div class="header-tabs">
+            <a class="header-tab ${pageTitle == '设备列表' ? 'active' : ''}" href="${pageContext.request.contextPath}/equipment">设备列表</a>
+            <a class="header-tab ${pageTitle == '我的预约' ? 'active' : ''}" href="${pageContext.request.contextPath}/booking/my">我的预约</a>
+            <a class="header-tab ${pageTitle == '我的使用记录' ? 'active' : ''}" href="${pageContext.request.contextPath}/usage/my">使用记录</a>
+            <a class="header-tab ${pageTitle == '我的报修记录' ? 'active' : ''}" href="${pageContext.request.contextPath}/maintenance/my">我的报修</a>
+            <% if (isAdmin) { %>
+            <div class="header-dropdown">
+                <a class="header-tab dropdown-toggle ${pageTitle.contains('管理') || pageTitle.contains('参数') || pageTitle.contains('审批') || pageTitle.contains('维护记录') ? 'active' : ''}" href="#" id="adminDropdown" role="button" data-toggle="dropdown">
+                    管理员
+                </a>
+                <div class="dropdown-menu">
+                    <% if (isLabAdmin || isSysAdmin) { %>
+                    <a class="dropdown-item ${pageTitle == '待审批预约' ? 'active' : ''}" href="${pageContext.request.contextPath}/booking/pending">审批预约</a>
+                    <a class="dropdown-item ${pageTitle == '所有维护记录' ? 'active' : ''}" href="${pageContext.request.contextPath}/maintenance/all">维护记录</a>
+                    <% } %>
+                    <% if (isLabAdmin) { %>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item ${pageTitle == '设备管理' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/equipment">设备管理</a>
+                    <% } %>
+                    <% if (isSysAdmin) { %>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item ${pageTitle == '用户管理' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/users">用户管理</a>
+                    <a class="dropdown-item ${pageTitle == '实验室管理' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/labs">实验室管理</a>
+                    <a class="dropdown-item ${pageTitle == '系统参数配置' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/params">系统参数</a>
+                    <% } %>
+                </div>
+            </div>
+            <% } %>
+        </div>
+        <div class="header-user">
+            <div class="user-info">
+                <span class="username"><c:out value="${sessionScope.LOGIN_USER.realName != null ? sessionScope.LOGIN_USER.realName : sessionScope.LOGIN_USER.username}"/></span>
+                <% if (isAdmin) { %>
+                <span class="user-role">管理员</span>
+                <% } else { %>
+                <span class="user-role">用户</span>
+                <% } %>
+            </div>
+            <div class="user-menu">
+                <a href="${pageContext.request.contextPath}/account/profile">个人资料</a>
+                <a href="${pageContext.request.contextPath}/logout">退出登录</a>
+            </div>
+        </div>
+    </div>
+</div>

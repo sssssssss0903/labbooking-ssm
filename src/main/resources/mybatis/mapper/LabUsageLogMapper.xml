@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labbooking.ssm.mapper.LabUsageLogMapper">
+    <resultMap id="BaseResultMap" type="com.labbooking.ssm.domain.LabUsageLog">
+        <id column="id" property="id"/>
+        <result column="booking_id" property="bookingId"/>
+        <result column="actual_start_time" property="actualStartTime"/>
+        <result column="actual_end_time" property="actualEndTime"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="equipment_id" property="equipmentId"/>
+        <result column="equipment_name" property="equipmentName"/>
+        <result column="equipment_code" property="equipmentCode"/>
+        <result column="lab_id" property="labId"/>
+        <result column="lab_name" property="labName"/>
+        <result column="purpose" property="purpose"/>
+        <result column="applicant_name" property="applicantName"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.labbooking.ssm.domain.LabUsageLog" useGeneratedKeys="true" keyProperty="id">
+        insert into lab_usage_log (booking_id, actual_start_time, actual_end_time, remark, create_time, update_time)
+        values (#{bookingId}, #{actualStartTime}, #{actualEndTime}, #{remark}, #{createTime}, #{updateTime})
+    </insert>
+
+    <select id="listByUserId" resultMap="BaseResultMap">
+        select ul.*,
+               b.equipment_id as equipment_id,
+               b.purpose as purpose,
+               b.user_id as user_id,
+               eq.equipment_name as equipment_name,
+               eq.equipment_code as equipment_code,
+               eq.lab_id as lab_id,
+               li.lab_name as lab_name,
+               u.real_name as applicant_name
+        from lab_usage_log ul
+                 inner join lab_booking b on ul.booking_id = b.id
+                 left join lab_equipment eq on b.equipment_id = eq.id
+                 left join lab_info li on eq.lab_id = li.id
+                 left join sys_user u on b.user_id = u.id
+        where b.user_id = #{userId}
+        order by ul.actual_end_time desc
+    </select>
+</mapper>
+
+
+

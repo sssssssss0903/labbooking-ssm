@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labbooking.ssm.mapper.LabBookingMapper">
+    <resultMap id="BaseResultMap" type="com.labbooking.ssm.domain.LabBooking">
+        <id column="id" property="id"/>
+        <result column="equipment_id" property="equipmentId"/>
+        <result column="user_id" property="userId"/>
+        <result column="lab_id" property="labId"/>
+        <result column="lab_name" property="labName"/>
+        <result column="equipment_name" property="equipmentName"/>
+        <result column="equipment_code" property="equipmentCode"/>
+        <result column="applicant_name" property="applicantName"/>
+        <result column="applicant_phone" property="applicantPhone"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="purpose" property="purpose"/>
+        <result column="status" property="status"/>
+        <result column="apply_time" property="applyTime"/>
+        <result column="approve_time" property="approveTime"/>
+        <result column="approver_id" property="approverId"/>
+        <result column="approve_comment" property="approveComment"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="cancel_time" property="cancelTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.labbooking.ssm.domain.LabBooking" useGeneratedKeys="true" keyProperty="id">
+        insert into lab_booking
+        (equipment_id, user_id, start_time, end_time, purpose, status, apply_time, create_time, update_time)
+        values (#{equipmentId}, #{userId}, #{startTime}, #{endTime}, #{purpose}, #{status}, #{applyTime}, #{createTime}, #{updateTime})
+    </insert>
+
+    <select id="selectById" parameterType="long" resultMap="BaseResultMap">
+        select * from lab_booking where id = #{id}
+    </select>
+    <select id="listFinishedByUser" resultMap="BaseResultMap">
+        select b.*,
+               eq.lab_id as lab_id,
+               li.lab_name as lab_name,
+               eq.equipment_name as equipment_name
+        from lab_booking b
+                 left join lab_equipment eq on b.equipment_id = eq.id
+                 left join lab_info li on eq.lab_id = li.id
+        where b.user_id = #{userId} and b.status = 'FINISHED'
+        order by b.end_time desc
+    </select>
+
+    <!-- 冲突判定：与 [start,end) 区间有交集，且状态为 APPROVED 或 PENDING，排除自身 -->
+    <select id="countConflict" resultType="int">
+        select count(1)
+        from lab_booking
+        where equipment_id = #{equipmentId}
+          and status in ('APPROVED','PENDING')
+          and (start_time &lt; #{endTime} and end_time &gt; #{startTime})
+          <if test="excludeId != null">
+              and id &lt;&gt; #{excludeId}
+          </if>
+    </select>
+
+    <select id="listByUser" resultMap="BaseResultMap">
+        select b.*,
+               eq.lab_id          as lab_id,
+               li.lab_name        as lab_name,
+               eq.equipment_name  as equipment_name,
+               eq.equipment_code  as equipment_code
+        from lab_booking b
+                 left join lab_equipment eq on b.equipment_id = eq.id
+                 left join lab_info li on eq.lab_id = li.id
+        where b.user_id = #{userId}
+        <if test="status != null and status != ''">
+            and b.status = #{status}
+        </if>
+        order by b.apply_time desc
+    </select>
+
+    <select id="listPending" resultMap="BaseResultMap">
+        select b.*,
+               eq.lab_id as lab_id,
+               li.lab_name as lab_name,
+               eq.equipment_name as equipment_name,
+               eq.equipment_code as equipment_code,
+               u.real_name as applicant_name,
+               u.phone as applicant_phone
+        from lab_booking b
+                 left join lab_equipment eq on b.equipment_id = eq.id
+                 left join lab_info li on eq.lab_id = li.id
+                 left join sys_user u on b.user_id = u.id
+        where b.status = 'PENDING'
+        order by b.apply_time asc
+    </select>
+
+    <update id="approve">
+        update lab_booking
+        set status = #{status},
+            approve_time = #{approveTime},
+            approver_id = #{approverId},
+            <choose>
+                <when test="status == 'REJECTED'">
+                    reject_reason = #{approveComment},
+                </when>
+                <otherwise>
+                    approve_comment = #{approveComment},
+                </otherwise>
+            </choose>
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update lab_booking set status = #{status}, update_time = now() where id = #{id}
+    </update>
+
+    <!-- 批量将已结束且仍为 APPROVED 的预约置为 FINISHED -->
+    <update id="finishIfEnded">
+        update lab_booking
+        set status = 'FINISHED'
+        where status = 'APPROVED' and end_time &lt;= #{now}
+    </update>
+
+    <!-- 列出已到期且仍为 APPROVED 的预约（用于生成使用记录） -->
+    <select id="listEndedApproved" resultMap="BaseResultMap">
+        select * from lab_booking
+        where status = 'APPROVED' and end_time &lt;= #{now}
+        order by end_time asc
+    </select>
+    <!-- 待审批过滤：仅显示管理员负责实验室；可选按具体实验室筛选 -->
+    <select id="listPendingFiltered" resultMap="BaseResultMap">
+        select b.*,
+               eq.lab_id as lab_id,
+               li.lab_name as lab_name,
+               eq.equipment_name as equipment_name,
+               eq.equipment_code as equipment_code,
+               u.real_name as applicant_name,
+               u.phone as applicant_phone
+        from lab_booking b
+                 inner join lab_equipment eq on b.equipment_id = eq.id
+                 inner join lab_info li on eq.lab_id = li.id
+                 left join sys_user u on b.user_id = u.id
+        where b.status = 'PENDING'
+          <if test="managerId != null">
+              and li.manager_id = #{managerId}
+          </if>
+          <if test="labId != null">
+              and li.id = #{labId}
+          </if>
+        order by b.apply_time asc
+    </select>
+</mapper>
+
+

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labbooking.ssm.mapper.SysParamMapper">
+    <resultMap id="BaseResultMap" type="com.labbooking.ssm.domain.SysParam">
+        <id column="id" property="id"/>
+        <result column="param_key" property="paramKey"/>
+        <result column="param_value" property="paramValue"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <select id="selectByKey" parameterType="string" resultMap="BaseResultMap">
+        select * from sys_param where param_key = #{paramKey} limit 1
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        select * from sys_param order by id desc
+    </select>
+
+    <insert id="upsert">
+        insert into sys_param (param_key, param_value, remark)
+        values (#{paramKey}, #{paramValue}, #{remark})
+        on duplicate key update param_value = values(param_value), remark = values(remark)
+    </insert>
+</mapper>
+
+
+
